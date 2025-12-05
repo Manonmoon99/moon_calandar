@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>農耕天文曆 | 層次分明版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- 僅保留 FontAwesome CSS 用於少數 UI 圖示 (如箭頭)，核心業務圖示全改用 Emoji -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f0fdf4; user-select: none; -webkit-tap-highlight-color: transparent; overflow: hidden; }
+        .serif { font-family: 'Noto Serif TC', serif; }
+        
+        /* --- 核心顏色系統 --- */
+        .color-root { color: #E65100; }   
+        .color-leaf { color: #2E7D32; }   
+        .color-flower { color: #F59E0B; } 
+        .color-fruit { color: #D32F2F; }  
+        .color-ban { color: #757575; }    
+        
+        .color-asc { color: #F57F17; }
+        .color-desc { color: #5E35B1; }
+        
+        /* Emoji 專用樣式 */
+        .emoji-icon { 
+            display: inline-block; 
+            font-style: normal; 
+            line-height: 1; 
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1)); 
+        }
+        
+        /* Emoji 尺寸定義 */
+        .text-emoji-base { font-size: 1.2rem; }
+        .text-emoji-lg { font-size: 1.5rem; }
+        .text-emoji-xl { font-size: 1.8rem; }
+        .text-emoji-2xl { font-size: 2.5rem; } 
+        .text-emoji-giant { font-size: 6rem; opacity: 0.15; }
+
+        /* ★★★ 日曆專用尺寸 (90% Scale) ★★★ */
+        .text-cal-single { font-size: 2.0rem; } 
+        .text-cal-double { font-size: 1.45rem; } 
+
+        /* 背景漸層 */
+        .bg-root { background: linear-gradient(135deg, #FF9800, #E65100); }
+        .bg-leaf { background: linear-gradient(135deg, #66bb6a, #2E7D32); }
+        .bg-flower { background: linear-gradient(135deg, #FFC107, #F57F17); }
+        .bg-fruit { background: linear-gradient(135deg, #ef5350, #c62828); }
+        .bg-ban { background: linear-gradient(135deg, #bdbdbd, #757575); }
+        .bg-asc { background: linear-gradient(135deg, #fbc02d, #f57f17); }
+        .bg-desc { background: linear-gradient(135deg, #7e57c2, #5e35b1); }
+
+        /* 介面元件 */
+        .glass-card { background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(4px); border: 1px solid rgba(255, 255, 255, 0.2); }
+
+        .calendar-cell { 
+            min-height: 75px;
+            transition: transform 0.1s active, background-color 0.2s;
+            position: relative; 
+            border-radius: 10px; 
+            overflow: hidden;
+        }
+        .calendar-cell:active { transform: scale(0.96); }
+        
+        .calendar-cell.today { 
+            background-color: #ffffff; 
+            border: 2px solid #10b981; 
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.25);
+            z-index: 10;
+        }
+        .calendar-cell.today .day-number { 
+            background-color: #10b981; color: white; 
+        }
+
+        /* 左右並列佈局 */
+        .split-cell-row {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            height: 100%;
+            width: 100%;
+            padding: 14px 2px 4px 2px;
+        }
+        .split-icon-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 50%; 
+            height: 100%;
+        }
+
+        .tab-btn { transition: all 0.3s; border-radius: 9999px; padding: 6px 0; font-size: 0.85rem; color: #166534; opacity: 0.7; }
+        .tab-btn.active { background-color: #ffffff; color: #15803d; font-weight: 700; opacity: 1; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+        /* Modal Animation */
+        #detail-modal[aria-hidden="true"], #settings-modal[aria-hidden="true"] { opacity: 0; visibility: hidden; pointer-events: none; }
+        #detail-modal[aria-hidden="false"], #settings-modal[aria-hidden="false"] { opacity: 1; visibility: visible; pointer-events: auto; }
+        
+        #modal-content, #settings-content { transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        #detail-modal[aria-hidden="true"] #modal-content, #settings-modal[aria-hidden="true"] #settings-content { transform: translateY(40px); }
+        #detail-modal[aria-hidden="false"] #modal-content, #settings-modal[aria-hidden="false"] #settings-content { transform: translateY(0); }
+
+        /* Timeline Selection */
+        .timeline-item { transition: all 0.3s; border-radius: 8px; cursor: pointer; }
+        .timeline-item.active { background-color: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); }
+        .timeline-item.inactive { opacity: 0.5; filter: grayscale(0.5); }
+
+        /* 說明頁面 */
+        .explain-content h3 { font-family: 'Noto Serif TC', serif; font-weight: 700; color: #065f46; margin-bottom: 0.5rem; margin-top: 1.5rem; font-size: 1.1rem; }
+        .explain-content p { margin-bottom: 1rem; line-height: 1.6; color: #334155; font-size: 0.95rem; }
+        .explain-box { background: rgba(255,255,255,0.6); padding: 1rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.8); margin-bottom: 1rem; }
+        .legal-text { font-size: 0.75rem; color: #64748b; line-height: 1.5; margin-top: 0.5rem; }
+        
+        /* UI SVG Icons */
+        .svg-icon { width: 1em; height: 1em; fill: currentColor; display: inline-block; vertical-align: middle; }
+        
+        .loc-btn { cursor: pointer; transition: all 0.2s; }
+        .loc-btn:active { opacity: 0.7; transform: scale(0.95); }
+        
+        /* Hemisphere Toggle */
+        .hemisphere-option { border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; text-align: center; cursor: pointer; transition: all 0.2s; }
+        .hemisphere-option.selected { background-color: #ecfdf5; border-color: #10b981; color: #047857; font-weight: bold; }
+    </style>
+</head>
+<body class="h-[100dvh] flex justify-center text-slate-700 w-full overflow-hidden">
+
+    <div class="w-full max-w-md h-full shadow-2xl relative flex flex-col bg-[#f0fdf4]">
+        
+        <!-- Header -->
+        <div class="bg-gradient-to-br from-emerald-600 to-teal-700 pt-4 pb-4 rounded-b-[1.5rem] shadow-lg sticky top-0 z-30 text-white shrink-0">
+            
+            <!-- 1. 標題置中 (Row 1) -->
+            <div class="flex justify-center items-center px-4 mb-2">
+                <h1 class="text-2xl font-bold serif tracking-wider drop-shadow-md">農耕天文曆</h1>
+            </div>
+
+            <!-- 2. 功能按鈕列 (Row 2: Location Left, Today Right) -->
+            <div class="flex justify-between items-center px-4 mb-4">
+                <!-- Location Selector -->
+                <div class="flex items-center text-[10px] opacity-90 font-medium gap-1 bg-black/20 px-2 py-1 rounded-lg loc-btn" onclick="openSettings()">
+                    <svg class="svg-icon" viewBox="0 0 384 512" style="font-size: 0.8rem;"><path d="M215.7 499.2C267 435 384 279.4 384 192C384 86 298 0 192 0S0 86 0 192c0 87.4 117 243 168.3 307.2c12.3 15.3 35.1 15.3 47.4 0zM192 128a64 64 0 1 1 0 128 64 64 0 1 1 0-128z"/></svg>
+                    <span id="header-location-text">UTC+8 (北)</span>
+                    <svg class="svg-icon" viewBox="0 0 320 512" style="font-size: 0.6rem; margin-left:2px;"><path d="M137.4 374.6c12.5 12.5 32.8 12.5 45.3 0l128-128c9.2-9.2 11.9-22.9 6.9-34.9s-16.6-19.8-29.6-19.8L32 192c-12.9 0-24.6 7.8-29.6 19.8s-2.2 25.7 6.9 34.9l128 128z"/></svg>
+                </div>
+
+                <!-- Today Button -->
+                <button onclick="jumpToToday()" class="text-[10px] font-bold bg-white/90 text-emerald-700 px-3 py-1 rounded-full hover:bg-white transition shadow-sm flex items-center gap-1">
+                    <span>今天</span>
+                    <svg class="svg-icon" viewBox="0 0 512 512" style="font-size: 0.7rem;"><path d="M464 256A208 208 0 1 1 48 256a208 208 0 1 1 416 0zM0 256a256 256 0 1 0 512 0A256 256 0 1 0 0 256zM232 120V256c0 8 4 15.5 10.7 20l96 64c11 7.4 25.9 4.4 33.3-6.7s4.4-25.9-6.7-33.3L280 243.2V120c0-13.3-10.7-24-24-24s-24 10.7-24 24z"/></svg>
+                </button>
+            </div>
+
+            <!-- Month Nav Row -->
+            <div class="flex justify-between items-center px-4 mb-4">
+                <button onclick="changeMonth(-1)" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/20 transition">
+                    <svg class="svg-icon text-lg" viewBox="0 0 320 512"><path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l192 192c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L77.3 256 246.6 86.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-192 192z"/></svg>
+                </button>
+                <h2 id="month-display" class="text-lg font-bold tracking-wide leading-tight cursor-pointer">--</h2>
+                <button onclick="changeMonth(1)" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/20 transition">
+                    <svg class="svg-icon text-lg" viewBox="0 0 320 512"><path d="M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z"/></svg>
+                </button>
+            </div>
+
+            <!-- Dashboard Layout -->
+            <div class="grid grid-cols-4 gap-2 px-3">
+                <!-- Plant Type -->
+                <div class="glass-card flex flex-col items-center justify-center p-2 rounded-xl transition hover:bg-white/20 cursor-default">
+                    <div id="dash-plant-icon-container" class="text-emoji-xl mb-1 drop-shadow-sm"></div>
+                    <span id="dash-plant-text" class="text-xs font-bold text-white leading-none">--</span>
+                </div>
+                <!-- Moon Path -->
+                <div class="glass-card flex flex-col items-center justify-center p-2 rounded-xl transition hover:bg-white/20 cursor-default">
+                    <div id="dash-path-icon" class="text-emoji-xl"></div>
+                    <span id="dash-path-text" class="text-xs font-bold text-white leading-none mt-1">--</span>
+                </div>
+                 <!-- Zodiac -->
+                 <div class="glass-card flex flex-col items-center justify-center p-2 rounded-xl transition hover:bg-white/20 cursor-default">
+                    <span id="dash-zodiac-icon" class="text-2xl leading-none font-sans text-emerald-100 mb-1">--</span>
+                    <span id="dash-zodiac-text" class="text-xs font-bold text-white leading-none">--</span>
+                </div>
+                <!-- Moon Phase -->
+                <div class="glass-card flex flex-col items-center justify-center p-2 rounded-xl transition hover:bg-white/20 cursor-default">
+                    <div id="dash-phase-icon" class="text-emoji-xl text-white mb-1 color-phase">🌑</div>
+                    <span id="dash-phase-text" class="text-xs font-bold text-white leading-none">月相</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 bg-[#f0fdf4] -mt-3 pt-5 px-3 rounded-t-[1.5rem] relative z-20 flex flex-col overflow-hidden">
+            
+            <!-- Tab Switcher -->
+            <div class="flex justify-center mb-3 shrink-0">
+                <div class="bg-emerald-900/10 p-1 rounded-full flex w-full max-w-[280px] backdrop-blur-sm">
+                    <button onclick="switchTab('plant')" id="tab-plant" class="tab-btn active flex-1 text-center"><span class="mr-1">🌱</span> 農耕</button>
+                    <button onclick="switchTab('moon')" id="tab-moon" class="tab-btn flex-1 text-center"><span class="mr-1">🌙</span> 月相</button>
+                    <button onclick="switchTab('explain')" id="tab-explain" class="tab-btn flex-1 text-center"><span class="mr-1">📖</span> 說明</button>
+                </div>
+            </div>
+
+            <!-- Calendar Wrapper -->
+            <div id="calendar-view-container" class="flex-1 flex flex-col overflow-hidden">
+                <div class="grid grid-cols-7 text-center py-1 text-[10px] font-bold text-emerald-700/60 shrink-0">
+                    <div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div>
+                </div>
+                <div id="calendar-grid" class="grid grid-cols-7 gap-[3px] flex-1 overflow-y-auto pb-16 content-start">
+                    <!-- JS Generated -->
+                </div>
+            </div>
+
+            <!-- Explanation Wrapper -->
+            <div id="explain-view-container" class="hidden flex-1 overflow-y-auto pb-20 px-1 explain-content">
+                <div class="explain-box">
+                    <h3 style="margin-top:0;">什麼是天文曆？</h3>
+                    <p>這份曆法基於生機互動農法 (Bio-Dynamic) 的原理，認為植物的生長不僅受陽光、水分影響，更深深受到宇宙天體（特別是月亮與黃道星座）運行節律的牽引。這份曆法旨在幫助我們配合這些自然的呼吸節奏進行農事與生活。</p>
+                </div>
+                <div class="explain-box bg-orange-50/50 border-orange-100">
+                    <h3>四大元素與農耕 (Plant Types)</h3>
+                    <ul class="list-disc pl-5 text-sm space-y-2 text-slate-600">
+                        <li><span class="emoji-icon">🥕</span> <strong class="color-root">根日 (土)</strong>：適合翻土、堆肥、採收根莖類。</li>
+                        <li><span class="emoji-icon">🌿</span> <strong class="color-leaf">葉日 (水)</strong>：適合澆水、種植葉菜、割草。</li>
+                        <li><span class="emoji-icon">🌼</span> <strong class="color-flower">花日 (光/氣)</strong>：適合照料花卉、採收需乾燥的藥草。</li>
+                        <li><span class="emoji-icon">🍎</span> <strong class="color-fruit">果日 (火)</strong>：適合採收水果、種子，進行釀造或品飲。</li>
+                    </ul>
+                </div>
+                <div class="explain-box bg-blue-50/50 border-blue-100">
+                    <h3>月亮軌跡 (Moon Path)</h3>
+                    <ul class="list-disc pl-5 text-sm space-y-2 text-slate-600">
+                        <li><strong class="color-asc">⤴️ 上升月 (Ascending)</strong>：能量如「呼氣」般向外、向上擴展。適合接枝、採集接穗。</li>
+                        <li><strong class="color-desc">⤵️ 下降月 (Descending)</strong>：能量如「吸氣」般向內、向下收斂。適合移栽、種植、施肥。</li>
+                    </ul>
+                    <p class="text-xs mt-2 text-slate-400">*註：南半球的上升/下降定義與北半球相反，本程式會依據設定自動調整。</p>
+                </div>
+                 <div class="explain-box bg-gray-50/50 border-gray-100">
+                    <h3>🚫 休息日 (Rest Days)</h3>
+                    <p>當月亮運行至軌道交點或遠近地點時，宇宙能量不穩定。此時不宜進行主要農事，建議休息或整理農具。</p>
+                </div>
+                
+                <!-- 關於與免責聲明 -->
+                <div class="mt-8 border-t border-slate-200 pt-4">
+                    <h4 class="text-sm font-bold text-slate-600 mb-2">關於本程式</h4>
+                    <p class="legal-text">
+                        <strong>版本：</strong> 5.4.0 (Re-Layout)<br>
+                        <strong>開發者：</strong> 農夫彼得 / 心是一畝田自然農場<br>
+                        <strong>資料來源：</strong> 本曆法計算基於公開的天文學公式 (Lahiri Ayanamsa) 與魯道夫·史代納 (Rudolf Steiner) 人智學農業原理。
+                    </p>
+                    <h4 class="text-sm font-bold text-slate-600 mt-4 mb-2">免責聲明 (Disclaimer)</h4>
+                    <p class="legal-text">
+                        1. 本程式提供的農耕建議僅供參考，實際農事請依據當地氣候、土壤條件與種植經驗自行判斷。<br>
+                        2. 本程式為免費共享軟體，開發者不對使用本程式造成的任何直接或間接損失負責。<br>
+                        3. 本程式為單機離線版本，不會收集、儲存或傳輸任何使用者的個人資料。<br>
+                        4. 程式計算可能錯誤，建議以當地紙本版天文曆為主，參考使用。
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div id="footer-legend" class="fixed bottom-0 w-full max-w-md bg-white/95 backdrop-blur-md border-t border-emerald-100 flex justify-around py-2 px-4 text-[9px] text-slate-500 z-40 shadow-[0_-5px_15px_rgba(0,0,0,0.03)] shrink-0"></div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/50 backdrop-blur-sm transition-all duration-300" aria-hidden="true" onclick="closeSettings()">
+        <div id="settings-content" class="w-full max-w-sm bg-white rounded-[1.5rem] shadow-xl p-6" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-slate-700">設定 (Settings)</h3>
+                <button onclick="closeSettings()" class="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200"><svg class="svg-icon" viewBox="0 0 384 512"><path d="M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3 297.4 406.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256 342.6 150.6z"/></svg></button>
+            </div>
+            
+            <h4 class="text-sm font-bold text-slate-500 uppercase mb-2 tracking-wider">選擇時區</h4>
+            <div class="space-y-2 mb-6 max-h-40 overflow-y-auto" id="timezone-list"></div>
+            
+            <h4 class="text-sm font-bold text-slate-500 uppercase mb-2 tracking-wider">所在半球</h4>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="hemisphere-option" id="hemi-n" onclick="selectHemisphere('N')">北半球 (North)</div>
+                <div class="hemisphere-option" id="hemi-s" onclick="selectHemisphere('S')">南半球 (South)</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div id="detail-modal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-emerald-900/40 backdrop-blur-sm transition-all duration-300" aria-hidden="true" onclick="closeModal()">
+        <div id="modal-content" class="w-full max-w-sm bg-white rounded-[2rem] shadow-2xl relative flex flex-col max-h-[85vh]" onclick="event.stopPropagation()">
+            
+            <!-- Modal Header (h-36) -->
+            <div id="modal-header-bg" class="h-36 shrink-0 relative flex items-center justify-center transition-colors duration-500">
+                <!-- Background Icon -->
+                <div id="modal-header-icon-container" class="text-[8rem] opacity-20 absolute -bottom-8 -right-8 transform rotate-12 select-none"></div>
+                
+                <div class="text-center text-white relative z-10 mt-1">
+                    <!-- Date -->
+                    <h2 id="modal-date" class="text-5xl font-bold serif mb-0 drop-shadow-sm leading-tight">--</h2>
+                    
+                    <!-- Lunar Date & Term (Side by Side) -->
+                    <div class="flex items-center justify-center gap-3 my-1.5">
+                        <span id="modal-lunar" class="text-lg font-serif font-medium tracking-wider drop-shadow-sm opacity-95">農曆--月--日</span>
+                        <span class="w-px h-3 bg-white/40"></span>
+                        <span id="modal-term" class="text-sm font-medium bg-white/20 px-2 py-0.5 rounded text-white/95 backdrop-blur-sm">--</span>
+                    </div>
+                    
+                    <!-- Weekday -->
+                    <p id="modal-weekday" class="text-sm font-medium opacity-80 tracking-widest uppercase mb-1">--</p>
+                </div>
+                
+                <!-- Close Button -->
+                <button onclick="closeModal()" class="absolute top-4 right-4 w-10 h-10 bg-black/20 rounded-full text-white flex items-center justify-center hover:bg-black/30 transition backdrop-blur-md z-50 cursor-pointer shadow-sm border border-white/20">
+                    <svg class="svg-icon text-xl drop-shadow-md" viewBox="0 0 384 512"><path d="M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3 297.4 406.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256 342.6 150.6z"/></svg>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="px-6 pt-4 pb-6 bg-white relative overflow-y-auto">
+                <!-- Timeline -->
+                <div id="modal-timeline" class="mb-4 bg-slate-50 rounded-xl p-3 border border-slate-100 hidden">
+                    <p class="text-[10px] text-slate-400 font-bold uppercase mb-2 tracking-widest text-center">當日行程 (點擊切換)</p>
+                    <div class="flex items-center justify-between text-sm">
+                        <div id="timeline-item-1" class="timeline-item flex flex-col items-center w-1/2 border-r border-slate-200 pr-1 py-1" onclick="selectEvent(0)">
+                            <span id="time-1-range" class="text-xs text-slate-500 font-mono mb-0.5 font-bold"></span>
+                            <div class="flex items-center gap-1.5">
+                                <span id="time-1-icon" class="text-lg"></span>
+                                <span id="time-1-text" class="font-bold text-slate-700"></span>
+                            </div>
+                        </div>
+                        <div id="timeline-item-2" class="timeline-item flex flex-col items-center w-1/2 pl-1 py-1" onclick="selectEvent(1)">
+                            <span id="time-2-range" class="text-xs text-slate-500 font-mono mb-0.5 font-bold"></span>
+                            <div class="flex items-center gap-1.5">
+                                <span id="time-2-icon" class="text-lg"></span>
+                                <span id="time-2-text" class="font-bold text-slate-700"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col items-center mb-5">
+                    <span id="modal-badge" class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-white shadow-md text-slate-500 mb-2 z-10 border border-slate-50">Type</span>
+                    <h3 id="modal-title" class="text-2xl font-bold text-slate-800 mb-1 serif text-center">Title</h3>
+                    <p id="modal-subtitle" class="text-sm text-slate-400 font-medium tracking-wide text-center">Subtitle</p>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="bg-emerald-50/80 rounded-2xl p-4 flex items-start gap-4 border border-emerald-100">
+                        <div class="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 flex-shrink-0 mt-0.5 text-sm">
+                             <svg class="svg-icon" viewBox="0 0 448 512"><path d="M438.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L160 338.7 393.4 105.4c12.5-12.5 32.8-12.5 45.3 0z"/></svg>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-emerald-500 uppercase mb-1 tracking-wider">適宜</p>
+                            <p id="modal-do" class="text-sm text-slate-700 font-medium leading-relaxed">...</p>
+                        </div>
+                    </div>
+                    <div class="bg-rose-50/80 rounded-2xl p-4 flex items-start gap-4 border border-rose-100">
+                        <div class="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center text-rose-500 flex-shrink-0 mt-0.5 text-sm">
+                             <svg class="svg-icon" viewBox="0 0 384 512"><path d="M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3 297.4 406.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256 342.6 150.6z"/></svg>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-rose-400 uppercase mb-1 tracking-wider">避免</p>
+                            <p id="modal-avoid" class="text-sm text-slate-700 font-medium leading-relaxed">...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data (Emojis)
+        const PLANT_TYPES = {
+            'Root': { name: '根日', icon: '🥕', color: 'color-root', bg: 'bg-root', do: '翻土、堆肥、收根莖。', avoid: '避免接觸花朵。' },
+            'Leaf': { name: '葉日', icon: '🌿', color: 'color-leaf', bg: 'bg-leaf', do: '澆水、種葉菜、割草。', avoid: '避免採收果實。' },
+            'Flower': { name: '花日', icon: '🌼', color: 'color-flower', bg: 'bg-flower', do: '採收花卉、通風。', avoid: '避免過度施肥。' },
+            'Fruit': { name: '果日', icon: '🍎', color: 'color-fruit', bg: 'bg-fruit', do: '採收水果、修剪。', avoid: '避免移栽。' },
+            'Ban':   { name: '休息日', icon: '🚫', color: 'color-ban', bg: 'bg-ban', do: '整理農具、休息。', avoid: '禁止任何農事。' }
+        };
+        const MOON_PATH = {
+            'Ascending': { name: '上升', icon: '⤴️', color: 'color-asc', bg: 'bg-asc', do: '接枝、採集。', avoid: '移栽。' },
+            'Descending': { name: '下降', icon: '⤵️', color: 'color-desc', bg: 'bg-desc', do: '移栽、施肥。', avoid: '接枝。' }
+        };
+        const ZODIAC_SYMBOLS = { "白羊": "♈", "金牛": "♉", "雙子": "♊", "巨蟹": "♋", "獅子": "♌", "處女": "♍", "天秤": "♎", "天蠍": "♏", "射手": "♐", "摩羯": "♑", "水瓶": "♒", "雙魚": "♓" };
+        const ZODIAC_MAP = [
+            { name: "白羊", type: "Fruit", path: "Ascending" }, { name: "金牛", type: "Root", path: "Ascending" }, 
+            { name: "雙子", type: "Flower", path: "Descending" }, { name: "巨蟹", type: "Leaf", path: "Descending" },  
+            { name: "獅子", type: "Fruit", path: "Descending" }, { name: "處女", type: "Root", path: "Descending" },
+            { name: "天秤", type: "Flower", path: "Descending" }, { name: "天蠍", type: "Leaf", path: "Descending" },  
+            { name: "射手", type: "Fruit", path: "Ascending" }, { name: "摩羯", type: "Root", path: "Ascending" },  
+            { name: "水瓶", type: "Flower", path: "Ascending" }, { name: "雙魚", type: "Leaf", path: "Ascending" }
+        ];
+
+        // Timezones
+        const TIMEZONES = [
+            { name: "台灣/中國 (UTC+8)", offset: 8 }, { name: "日本/韓國 (UTC+9)", offset: 9 },
+            { name: "泰國/越南 (UTC+7)", offset: 7 }, { name: "澳洲東部 (UTC+10)", offset: 10 },
+            { name: "中歐 CET (UTC+1)", offset: 1 }, { name: "英國 GMT (UTC+0)", offset: 0 },
+            { name: "美東 EST (UTC-5)", offset: -5 }, { name: "美西 PST (UTC-8)", offset: -8 }
+        ];
+
+        let currentTab = 'plant'; 
+        let currentViewDate = new Date();
+        let currentModalEvents = [];
+        let currentUserOffset = 8; 
+        let currentHemisphere = 'N'; // Default North
+
+        function initApp() {
+            const savedOffset = localStorage.getItem('bd_user_offset');
+            if (savedOffset) currentUserOffset = parseInt(savedOffset);
+            const savedHemi = localStorage.getItem('bd_user_hemi');
+            if (savedHemi) currentHemisphere = savedHemi;
+            
+            renderLocationText();
+            switchTab('plant');
+        }
+
+        function getIconHTML(typeInfo, additionalClasses = '') {
+            return `<span class="emoji-icon ${additionalClasses}">${typeInfo.icon}</span>`;
+        }
+
+        function getSiderealDegree(timestamp) {
+            const d = (timestamp / 86400000) - 10957.5;
+            let tropicalLong = (218.316 + 13.176396 * d) % 360;
+            if (tropicalLong < 0) tropicalLong += 360;
+            let siderealLong = tropicalLong - 24.1; 
+            if (siderealLong < 0) siderealLong += 360;
+            return siderealLong;
+        }
+
+        function checkUnfavorable(localDate) { 
+            const day = localDate.getDate(); 
+            return (day === 4 || day === 11 || day === 18 || day === 26); 
+        }
+
+        function getMoonData(timestamp, localDate) {
+            const degree = getSiderealDegree(timestamp);
+            const idx = Math.floor(degree / 30) % 12;
+            const z = ZODIAC_MAP[idx];
+            const isBan = checkUnfavorable(localDate);
+            
+            let effectivePath = z.path;
+            if (currentHemisphere === 'S') {
+                effectivePath = (z.path === 'Ascending') ? 'Descending' : 'Ascending';
+            }
+            
+            return { 
+                zodiac: z.name + '座', 
+                symbol: ZODIAC_SYMBOLS[z.name], 
+                plantType: isBan ? 'Ban' : z.type, 
+                pathType: effectivePath, 
+                isBan: isBan, 
+                degree: degree 
+            };
+        }
+
+        function getMoonPhaseState(timestamp) {
+            const knownNewMoon = new Date('2024-01-11T19:57:00Z').getTime(); 
+            const cycle = 29.53058867 * 86400000;
+            const diff = timestamp - knownNewMoon;
+            const phaseRatio = (diff % cycle) / cycle; 
+            const age = phaseRatio * 29.53;
+            let emoji='🌑', text='新月';
+            if(age>1.5) { emoji='🌒'; text='眉月'; }
+            if(age>6) { emoji='🌓'; text='上弦'; }
+            if(age>9) { emoji='🌔'; text='盈凸'; }
+            if(age>13.5) { emoji='🌕'; text='滿月'; }
+            if(age>16) { emoji='🌖'; text='虧凸'; }
+            if(age>20.5) { emoji='🌗'; text='下弦'; }
+            if(age>23.5) { emoji='🌘'; text='殘月'; }
+            return { text: text, icon: emoji };
+        }
+
+        function getLunarDateStr(d) {
+            try {
+                const formatter = new Intl.DateTimeFormat('zh-TW', { calendar: 'chinese', day: 'numeric', month: 'numeric' });
+                const parts = formatter.formatToParts(d);
+                const m = parseInt(parts.find(p => p.type === 'month').value);
+                const dVal = parseInt(parts.find(p => p.type === 'day').value);
+                const cnM = ['','正月','二月','三月','四月','五月','六月','七月','八月','九月','十月','冬月','臘月'];
+                const cnD = ['','初一','初二','初三','初四','初五','初六','初七','初八','初九','初十','十一','十二','十三','十四','十五','十六','十七','十八','十九','二十','廿一','廿二','廿三','廿四','廿五','廿六','廿七','廿八','廿九','三十'];
+                return `農曆 ${cnM[m]||m+'月'}${cnD[dVal]||dVal+'日'}${cnD[dVal]?'':'日'}`;
+            } catch (e) { return ""; }
+        }
+        function getSolarTerm(d) {
+            const m = d.getMonth() + 1;
+            const day = d.getDate();
+            if(m===1){ if(day<6) return "冬至後"; if(day<20) return "小寒"; return "大寒"; }
+            if(m===2){ if(day<4) return "大寒後"; if(day<19) return "立春"; return "雨水"; }
+            if(m===3){ if(day<6) return "雨水後"; if(day<21) return "驚蟄"; return "春分"; }
+            if(m===4){ if(day<5) return "春分後"; if(day<20) return "清明"; return "穀雨"; }
+            if(m===5){ if(day<6) return "穀雨後"; if(day<21) return "立夏"; return "小滿"; }
+            if(m===6){ if(day<6) return "小滿後"; if(day<21) return "芒種"; return "夏至"; }
+            if(m===7){ if(day<7) return "夏至後"; if(day<23) return "小暑"; return "大暑"; }
+            if(m===8){ if(day<8) return "大暑後"; if(day<23) return "立秋"; return "處暑"; }
+            if(m===9){ if(day<8) return "處暑後"; if(day<23) return "白露"; return "秋分"; }
+            if(m===10){ if(day<8) return "秋分後"; if(day<23) return "寒露"; return "霜降"; }
+            if(m===11){ if(day<7) return "霜降後"; if(day<22) return "立冬"; return "小雪"; }
+            if(m===12){ if(day<7) return "小雪後"; if(day<22) return "大雪"; return "冬至"; }
+            return "";
+        }
+
+        function getDayEvents(dateObj) {
+            const y = dateObj.getFullYear();
+            const m = dateObj.getMonth();
+            const d = dateObj.getDate();
+            const baseTimestamp = Date.UTC(y, m, d) - (currentUserOffset * 60 * 60 * 1000);
+            const morningTs = baseTimestamp + (8 * 60 * 60 * 1000);
+            const eveningTs = baseTimestamp + (20 * 60 * 60 * 1000);
+            const startData = getMoonData(morningTs, dateObj);
+            const endData = getMoonData(eveningTs, dateObj);
+            
+            let hasChanged = false;
+            if (currentTab === 'plant' && startData.plantType !== endData.plantType) hasChanged = true;
+            if (currentTab === 'moon' && startData.pathType !== endData.pathType) hasChanged = true;
+
+            if (!hasChanged) {
+                return [{ data: startData, label: 'Whole Day' }];
+            } else {
+                let diff = (endData.degree - startData.degree + 360) % 360;
+                if (diff > 15) diff = 13.2; 
+                const nextBoundary = Math.ceil(startData.degree / 30) * 30;
+                const distToBoundary = nextBoundary - startData.degree;
+                let ratio = distToBoundary / diff;
+                if (ratio < 0) ratio = 0; if (ratio > 1) ratio = 1;
+                const totalMinutes = ratio * 24 * 60; 
+                const hour = Math.floor(totalMinutes / 60);
+                const minute = Math.floor(totalMinutes % 60);
+                const timeStr = `${String(hour).padStart(2,'0')}:${String(minute).padStart(2,'0')}`;
+                return [{ data: startData, label: 'Before', time: timeStr }, { data: endData, label: 'After', time: timeStr }];
+            }
+        }
+
+        function openSettings() {
+            const list = document.getElementById('timezone-list');
+            list.innerHTML = '';
+            TIMEZONES.forEach(tz => {
+                const isSelected = tz.offset === currentUserOffset;
+                const item = document.createElement('div');
+                item.className = `p-3 rounded-lg cursor-pointer flex justify-between items-center ${isSelected ? 'bg-emerald-50 border border-emerald-200' : 'hover:bg-slate-50'}`;
+                item.onclick = () => selectTimezone(tz.offset);
+                item.innerHTML = `<span class="text-sm font-medium text-slate-700">${tz.name}</span>${isSelected ? '<i class="fas fa-check text-emerald-500"></i>' : ''}`;
+                list.appendChild(item);
+            });
+            
+            document.getElementById('hemi-n').className = `hemisphere-option ${currentHemisphere === 'N' ? 'selected' : ''}`;
+            document.getElementById('hemi-s').className = `hemisphere-option ${currentHemisphere === 'S' ? 'selected' : ''}`;
+
+            document.getElementById('settings-modal').setAttribute('aria-hidden', 'false');
+        }
+
+        function closeSettings() {
+            document.getElementById('settings-modal').setAttribute('aria-hidden', 'true');
+        }
+
+        function selectTimezone(offset) {
+            currentUserOffset = offset;
+            localStorage.setItem('bd_user_offset', offset);
+            updateAndCloseSettings();
+        }
+        
+        function selectHemisphere(hemi) {
+            currentHemisphere = hemi;
+            localStorage.setItem('bd_user_hemi', hemi);
+            updateAndCloseSettings();
+        }
+        
+        function updateAndCloseSettings() {
+            renderLocationText();
+            updateDashboard(new Date()); 
+            renderCalendar(); 
+            closeSettings();
+        }
+
+        function renderLocationText() {
+            const tz = TIMEZONES.find(t => t.offset === currentUserOffset);
+            const hemiText = currentHemisphere === 'N' ? '北' : '南';
+            const text = tz ? `UTC${currentUserOffset >= 0 ? '+' : ''}${currentUserOffset} (${hemiText})` : `UTC+8 (${hemiText})`;
+            document.getElementById('header-location-text').innerText = text;
+        }
+
+        function updateDashboard(date) {
+            const nowTs = date.getTime(); 
+            const data = getMoonData(nowTs, date);
+            const pInfo = PLANT_TYPES[data.plantType];
+            const mInfo = MOON_PATH[data.pathType];
+            const ph = getMoonPhaseState(nowTs);
+
+            document.getElementById('dash-plant-icon-container').innerHTML = getIconHTML(pInfo, 'text-emoji-xl');
+            document.getElementById('dash-plant-text').innerText = pInfo.name;
+            document.getElementById('dash-path-icon').innerHTML = `<div class="relative"><i class="fas fa-moon text-xs opacity-50 text-emerald-200 absolute -left-2"></i>${getIconHTML(mInfo, 'text-emoji-xl')}</div>`;
+            document.getElementById('dash-path-text').innerText = mInfo.name;
+            document.getElementById('dash-zodiac-icon').innerText = data.symbol;
+            document.getElementById('dash-zodiac-text').innerText = data.zodiac;
+            document.getElementById('dash-phase-icon').innerText = ph.icon;
+            document.getElementById('dash-phase-text').innerText = ph.text.split(' ')[0]; 
+        }
+
+        function renderFooter() {
+            const footer = document.getElementById('footer-legend');
+            let html = '';
+            if (currentTab === 'plant') {
+                const types = ['Root','Leaf','Flower','Fruit','Ban'];
+                html = types.map(t => `<div class="flex flex-col items-center gap-0.5">${getIconHTML(PLANT_TYPES[t], 'text-emoji-base')}${PLANT_TYPES[t].name}</div>`).join('');
+            } else if (currentTab === 'moon') {
+                html = `
+                    <div class="flex flex-col items-center gap-0.5"><div class="text-emoji-base">${MOON_PATH['Ascending'].icon}</div>上升</div>
+                    <div class="flex flex-col items-center gap-0.5"><div class="text-emoji-base">${MOON_PATH['Descending'].icon}</div>下降</div>
+                    <div class="flex flex-col items-center gap-0.5"><div class="text-emoji-base">${PLANT_TYPES['Ban'].icon}</div>休息日</div>
+                `;
+            } else {
+                html = '<div class="text-xs opacity-50">天文曆原理說明</div>';
+            }
+            footer.innerHTML = html;
+        }
+
+        function renderCalendar() {
+            const year = currentViewDate.getFullYear();
+            const month = currentViewDate.getMonth();
+            document.getElementById('month-display').innerText = `${year}年 ${month+1}月`;
+            updateDashboard(new Date());
+            
+            const grid = document.getElementById('calendar-grid');
+            grid.innerHTML = '';
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month+1, 0).getDate();
+            const todayStr = new Date().toDateString();
+
+            for(let i=0; i<firstDay; i++) grid.innerHTML += '<div></div>';
+            
+            for(let d=1; d<=daysInMonth; d++) {
+                const cellDate = new Date(year, month, d);
+                const events = getDayEvents(cellDate);
+                const isToday = cellDate.toDateString() === todayStr;
+                let contentHtml = '';
+                
+                if(events.length === 1) {
+                    const info = currentTab === 'plant' ? PLANT_TYPES[events[0].data.plantType] : MOON_PATH[events[0].data.pathType];
+                    contentHtml = `<div class="flex items-center justify-center h-full w-full pt-1"><div class="text-cal-single transition active:scale-95">${getIconHTML(info)}</div></div>`;
+                } else {
+                    const i1 = currentTab === 'plant' ? PLANT_TYPES[events[0].data.plantType] : MOON_PATH[events[0].data.pathType];
+                    const i2 = currentTab === 'plant' ? PLANT_TYPES[events[1].data.plantType] : MOON_PATH[events[1].data.pathType];
+                    contentHtml = `<div class="split-cell-row"><div class="split-icon-wrapper text-cal-double transition active:scale-95">${getIconHTML(i1)}</div><div class="split-icon-wrapper text-cal-double transition active:scale-95">${getIconHTML(i2)}</div></div>`;
+                }
+                
+                grid.innerHTML += `<div onclick="openModal('${cellDate.toISOString()}')" class="calendar-cell bg-white hover:bg-emerald-50 cursor-pointer shadow-sm border border-emerald-50/50 ${isToday?'today':''}"><span class="absolute top-0.5 left-1 day-number mb-0 text-emerald-800/60 font-medium text-[10px] rounded-full w-4 h-4 flex items-center justify-center ${isToday?'bg-emerald-500 text-white':''}">${d}</span><div class="h-full w-full">${contentHtml}</div></div>`;
+            }
+        }
+        
+        function selectEvent(index) {
+            const items = document.querySelectorAll('.timeline-item');
+            items.forEach(el => el.classList.remove('active', 'inactive'));
+            items[index].classList.add('active');
+            items.forEach((el, i) => { if(i !== index) el.classList.add('inactive'); });
+
+            const event = currentModalEvents[index];
+            const data = event.data;
+            const info = currentTab === 'plant' ? PLANT_TYPES[data.plantType] : MOON_PATH[data.pathType];
+            const headerClass = info.bg;
+
+            document.getElementById('modal-header-bg').className = `h-36 shrink-0 relative flex items-center justify-center transition-colors duration-300 ${headerClass}`;
+            document.getElementById('modal-header-icon-container').innerText = info.icon; 
+            document.getElementById('modal-header-icon-container').className = `text-emoji-giant absolute -bottom-4 -right-4 transform rotate-12 select-none`; 
+            
+            document.getElementById('modal-title').innerText = info.name;
+            document.getElementById('modal-subtitle').innerText = currentTab==='plant'?`月亮位於 ${data.zodiac}`:`軌道 ${data.pathType}`;
+
+            document.getElementById('modal-do').innerText = info.do;
+            document.getElementById('modal-avoid').innerText = info.avoid;
+            document.getElementById('modal-badge').innerText = currentTab==='plant'?'農耕':'月相';
+            document.getElementById('modal-badge').className = `px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-white shadow-sm mb-2 z-10 border border-slate-100 ${info.color}`;
+        }
+
+        function openModal(iso) {
+            const date = new Date(iso);
+            const events = getDayEvents(date);
+            currentModalEvents = events;
+            const primaryData = events[0].data; 
+            
+            updateDashboard(date);
+
+            const info = currentTab === 'plant' ? PLANT_TYPES[primaryData.plantType] : MOON_PATH[primaryData.pathType];
+            const headerClass = info.bg;
+            
+            document.getElementById('modal-date').innerText = `${date.getMonth()+1}月${date.getDate()}日`;
+            document.getElementById('modal-weekday').innerText = ['週日','週一','週二','週三','週四','週五','週六'][date.getDay()];
+            document.getElementById('modal-lunar').innerText = getLunarDateStr(date);
+            document.getElementById('modal-term').innerText = getSolarTerm(date);
+            
+            document.getElementById('modal-header-bg').className = `h-36 shrink-0 relative flex items-center justify-center transition-colors duration-300 ${headerClass}`;
+            document.getElementById('modal-header-icon-container').innerHTML = `<span class="text-emoji-giant">${info.icon}</span>`;
+            
+            const tl = document.getElementById('modal-timeline');
+            if(events.length > 1) {
+                tl.classList.remove('hidden');
+                const i1 = currentTab==='plant'?PLANT_TYPES[events[0].data.plantType]:MOON_PATH[events[0].data.pathType];
+                const i2 = currentTab==='plant'?PLANT_TYPES[events[1].data.plantType]:MOON_PATH[events[1].data.pathType];
+                
+                document.getElementById('time-1-range').innerText = '00:00 - '+events[0].time;
+                document.getElementById('time-1-icon').innerHTML = getIconHTML(i1);
+                document.getElementById('time-1-text').innerText = i1.name;
+                
+                document.getElementById('time-2-range').innerText = events[0].time+' - 24:00';
+                document.getElementById('time-2-icon').innerHTML = getIconHTML(i2);
+                document.getElementById('time-2-text').innerText = i2.name;
+
+                selectEvent(0);
+            } else {
+                tl.classList.add('hidden');
+                document.getElementById('modal-title').innerText = info.name;
+                document.getElementById('modal-subtitle').innerText = currentTab==='plant'?`月亮位於 ${primaryData.zodiac}`:`軌道 ${primaryData.pathType}`;
+                document.getElementById('modal-do').innerText = info.do;
+                document.getElementById('modal-avoid').innerText = info.avoid;
+                document.getElementById('modal-badge').innerText = currentTab==='plant'?'農耕':'月相';
+                document.getElementById('modal-badge').className = `px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-white shadow-sm mb-2 z-10 border border-slate-100 ${info.color}`;
+            }
+            
+            document.getElementById('detail-modal').setAttribute('aria-hidden', 'false');
+        }
+
+        function closeModal() { document.getElementById('detail-modal').setAttribute('aria-hidden', 'true'); }
+        function changeMonth(d) { currentViewDate.setMonth(currentViewDate.getMonth()+d); renderCalendar(); }
+        function jumpToToday() { currentViewDate = new Date(); renderCalendar(); }
+        function switchTab(t) { currentTab=t; document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); document.getElementById('tab-'+t).classList.add('active'); 
+            if(t==='explain') { document.getElementById('calendar-view-container').classList.add('hidden'); document.getElementById('explain-view-container').classList.remove('hidden'); document.getElementById('footer-legend').classList.add('hidden'); }
+            else { document.getElementById('explain-view-container').classList.add('hidden'); document.getElementById('calendar-view-container').classList.remove('hidden'); document.getElementById('footer-legend').classList.remove('hidden'); renderCalendar(); renderFooter(); }
+        }
+
+        // Start
+        initApp();
+    </script>
+</body>
+</html>
