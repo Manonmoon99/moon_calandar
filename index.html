@@ -404,12 +404,21 @@
             { at: "2026-02-13T04:47:00+08:00", type: "apogee", label: "遠地點", beforeHours: 12, afterHours: 12 },
             { at: "2026-03-03T12:35:00+08:00", type: "node", label: "交點", beforeHours: 12, afterHours: 12 },
             { at: "2026-03-03T19:35:00+08:00", type: "lunarEclipse", label: "月全食", beforeHours: 12, afterHours: 12 }
-        ].map(item => ({
-            ...item,
-            ms: new Date(item.at).getTime(),
-            startMs: new Date(item.at).getTime() - item.beforeHours * 60 * 60 * 1000,
-            endMs: new Date(item.at).getTime() + item.afterHours * 60 * 60 * 1000
-        }));
+        ].map(normalizeAstroEvent);
+
+        const KNOWN_2026_ECLIPSES = [
+            { at: "2026-02-17T20:13:00+08:00", type: "solarEclipse", label: "日食", beforeHours: 24, afterHours: 24 },
+            { at: "2026-03-03T19:35:00+08:00", type: "lunarEclipse", label: "月全食", beforeHours: 24, afterHours: 24 },
+            { at: "2026-08-13T01:47:00+08:00", type: "solarEclipse", label: "日食", beforeHours: 24, afterHours: 24 },
+            { at: "2026-08-28T12:13:00+08:00", type: "lunarEclipse", label: "月偏食", beforeHours: 24, afterHours: 24 }
+        ].map(normalizeAstroEvent);
+
+        const AUTO_EVENT_SEEDS = [
+            { at: "2026-03-03T12:35:00+08:00", family: "node", type: "node", label: "交點", periodDays: 13.606110, beforeHours: 12, afterHours: 12 },
+            { at: "2026-02-13T04:47:00+08:00", family: "apsis", type: "apogee", label: "遠地點", periodDays: 13.777275, beforeHours: 12, afterHours: 12 }
+        ];
+
+        const autoEventCache = {};
 
         // Timezones
         const TIMEZONES = [
@@ -449,6 +458,16 @@
             return siderealLong;
         }
 
+        function normalizeAstroEvent(item) {
+            const ms = new Date(item.at).getTime();
+            return {
+                ...item,
+                ms,
+                startMs: ms - item.beforeHours * 60 * 60 * 1000,
+                endMs: ms + item.afterHours * 60 * 60 * 1000
+            };
+        }
+
         function getBDConstellation(degree) {
             const normalizedDegree = degree < 18.5 ? degree + 360 : degree;
             return BD_CONSTELLATIONS.find(c => normalizedDegree >= c.start && normalizedDegree < c.end) || BD_CONSTELLATIONS[0];
@@ -470,10 +489,109 @@
             return current ? getConstellationByName(current) : null;
         }
 
+        function getConstellationForTimestamp(timestamp) {
+            return getPaperCalibratedConstellation(timestamp) || getBDConstellation(getSiderealDegree(timestamp));
+        }
+
+        function generateAutoAstroEvents(year) {
+            if (autoEventCache[year]) return autoEventCache[year];
+
+            const yearStart = Date.UTC(year, 0, 1) - 3 * 24 * 60 * 60 * 1000;
+            const yearEnd = Date.UTC(year + 1, 0, 1) + 3 * 24 * 60 * 60 * 1000;
+            const events = [...KNOWN_2026_ECLIPSES];
+
+            AUTO_EVENT_SEEDS.forEach(seed => {
+                const seedMs = new Date(seed.at).getTime();
+                const periodMs = seed.periodDays * 24 * 60 * 60 * 1000;
+                const firstIndex = Math.floor((yearStart - seedMs) / periodMs) - 1;
+                const lastIndex = Math.ceil((yearEnd - seedMs) / periodMs) + 1;
+
+                for (let i = firstIndex; i <= lastIndex; i++) {
+                    const ms = Math.round(seedMs + i * periodMs);
+                    if (ms < yearStart || ms > yearEnd) continue;
+
+                    let type = seed.type;
+                    let label = seed.label;
+                    if (seed.family === 'apsis' && Math.abs(i % 2) === 1) {
+                        type = 'perigee';
+                        label = '近地點';
+                    }
+
+                    events.push(normalizeAstroEvent({
+                        at: new Date(ms).toISOString(),
+                        type,
+                        label,
+                        beforeHours: seed.beforeHours,
+                        afterHours: seed.afterHours
+                    }));
+                }
+            });
+
+            const merged = [...events, ...PAPER_ASTRO_EVENTS].sort((a, b) => a.ms - b.ms);
+            const deduped = [];
+            merged.forEach(event => {
+                const existingIndex = deduped.findIndex(existing =>
+                    existing.type === event.type && Math.abs(existing.ms - event.ms) < 18 * 60 * 60 * 1000
+                );
+                if (existingIndex >= 0) {
+                    const existing = deduped[existingIndex];
+                    const preferPaper = PAPER_ASTRO_EVENTS.includes(event);
+                    deduped[existingIndex] = preferPaper
+                        ? event
+                        : { ...existing, startMs: Math.min(existing.startMs, event.startMs), endMs: Math.max(existing.endMs, event.endMs) };
+                } else {
+                    deduped.push(event);
+                }
+            });
+
+            autoEventCache[year] = deduped;
+            return deduped;
+        }
+
+        function getAstroEventsForRange(startMs, endMs) {
+            const years = new Set([
+                new Date(startMs).getUTCFullYear(),
+                new Date(endMs).getUTCFullYear()
+            ]);
+            const events = [];
+            years.forEach(year => events.push(...generateAutoAstroEvents(year)));
+            return events
+                .filter(event => event.endMs > startMs && event.startMs < endMs)
+                .sort((a, b) => a.ms - b.ms);
+        }
+
         function getUnfavorableEvent(timestamp) {
-            const matches = PAPER_ASTRO_EVENTS.filter(event => timestamp >= event.startMs && timestamp < event.endMs);
+            const year = new Date(timestamp).getUTCFullYear();
+            const matches = generateAutoAstroEvents(year).filter(event => timestamp >= event.startMs && timestamp < event.endMs);
             if (!matches.length) return null;
             return matches.find(event => event.type.includes('Eclipse')) || matches[0];
+        }
+
+        function findSignBoundaries(startMs, endMs) {
+            const boundaries = [];
+            const stepMs = 2 * 60 * 60 * 1000;
+            let left = startMs;
+            let leftSign = getConstellationForTimestamp(left + 60 * 1000).name;
+
+            for (let right = Math.min(startMs + stepMs, endMs); right <= endMs; right += stepMs) {
+                const cappedRight = Math.min(right, endMs);
+                const rightSign = getConstellationForTimestamp(cappedRight - 60 * 1000).name;
+                if (rightSign !== leftSign) {
+                    let lo = left;
+                    let hi = cappedRight;
+                    for (let i = 0; i < 24; i++) {
+                        const mid = Math.floor((lo + hi) / 2);
+                        const midSign = getConstellationForTimestamp(mid).name;
+                        if (midSign === leftSign) lo = mid;
+                        else hi = mid;
+                    }
+                    boundaries.push(Math.round(hi / 60000) * 60000);
+                    leftSign = rightSign;
+                }
+                left = cappedRight;
+                if (cappedRight >= endMs) break;
+            }
+            return boundaries;
         }
 
         function getDisplayInfo(data) {
@@ -493,7 +611,7 @@
 
         function getMoonData(timestamp) {
             const degree = getSiderealDegree(timestamp);
-            const z = getPaperCalibratedConstellation(timestamp) || getBDConstellation(degree);
+            const z = getConstellationForTimestamp(timestamp);
             const unfavorableEvent = getUnfavorableEvent(timestamp);
             const isBan = Boolean(unfavorableEvent);
             
@@ -567,13 +685,13 @@
             const endMs = startMs + 24 * 60 * 60 * 1000;
             const boundaries = new Set([startMs, endMs]);
 
-            for (let t = startMs + 30 * 60 * 1000; t < endMs; t += 30 * 60 * 1000) {
-                boundaries.add(t);
-            }
             PAPER_SIGN_TRANSITIONS.forEach(transition => {
                 if (transition.ms > startMs && transition.ms < endMs) boundaries.add(transition.ms);
             });
-            PAPER_ASTRO_EVENTS.forEach(event => {
+            findSignBoundaries(startMs, endMs).forEach(boundary => {
+                if (boundary > startMs && boundary < endMs) boundaries.add(boundary);
+            });
+            getAstroEventsForRange(startMs, endMs).forEach(event => {
                 if (event.startMs > startMs && event.startMs < endMs) boundaries.add(event.startMs);
                 if (event.endMs > startMs && event.endMs < endMs) boundaries.add(event.endMs);
             });
