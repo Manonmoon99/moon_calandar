@@ -242,7 +242,8 @@
                         <li class="bg-white/70 rounded-lg p-3 border border-emerald-100">
                             <strong class="text-emerald-700">② 上升／下降月管「動作方向」</strong><br>
                             <span class="color-desc font-bold">⤵️ 下降月</span>（能量向根）：移栽定植、施堆肥、修剪。<br>
-                            <span class="color-asc font-bold">⤴️ 上升月</span>（樹液向上）：嫁接、採接穗、採收鮮食蔬果。
+                            <span class="color-asc font-bold">⤴️ 上升月</span>（樹液向上）：嫁接、採接穗、採收鮮食蔬果。<br>
+                            <span class="text-emerald-800">※ 播種是例外：只看第①層的器官日，上升或下降月都可以播。</span>（幼苗入土定植才看下降月）
                         </li>
                     </ul>
                     <p class="text-sm mt-3 mb-0 text-slate-600">兩層<strong>疊起來用</strong>才是圖恩方法的完整型：例如「果日＋下降月」＝定植番茄的理想日；「根日＋上升月」＝採收儲存蘿蔔的理想日。休息日（交點、近遠地點、日月食前後）則兩層都暫停：不播種、不定植、不嫁接、不做儲存性採收。</p>
@@ -398,12 +399,12 @@
             'Ban':   { name: '休息日', icon: '🚫', color: 'color-ban', bg: 'bg-ban', do: '整理農具環境、規劃農事。', avoid: '播種、定植、嫁接、儲存性採收。' }
         };
         const MOON_PATH = {
-            'Ascending': { name: '上升', icon: '⤴️', color: 'color-asc', bg: 'bg-asc', do: '嫁接、採接穗；採收鮮食蔬果。', avoid: '移栽定植、修剪（樹液上行，傷口流失大）。' },
-            'Descending': { name: '下降', icon: '⤵️', color: 'color-desc', bg: 'bg-desc', do: '移栽定植、施堆肥、修剪；根系易著土。', avoid: '嫁接、採接穗。' }
+            'Ascending': { name: '上升', icon: '⤴️', color: 'color-asc', bg: 'bg-asc', do: '嫁接、採接穗；採收鮮食蔬果。播種只看器官日，上升月可播。', avoid: '移栽定植、修剪（樹液上行，傷口流失大）。' },
+            'Descending': { name: '下降', icon: '⤵️', color: 'color-desc', bg: 'bg-desc', do: '移栽定植、施堆肥、修剪；根系易著土。播種只看器官日，下降月可播。', avoid: '嫁接、採接穗。' }
         };
         const PATH_HINT = {
-            'Ascending': '⤴️ 上升月：適合嫁接、採接穗、採收鮮食蔬果',
-            'Descending': '⤵️ 下降月：適合移栽定植、施堆肥、修剪'
+            'Ascending': '⤴️ 上升月：適合嫁接、採接穗、採收鮮食蔬果｜播種只看器官日，今天可播',
+            'Descending': '⤵️ 下降月：適合移栽定植、施堆肥、修剪｜播種只看器官日，今天可播'
         };
         const ZODIAC_SYMBOLS = { "白羊": "♈", "金牛": "♉", "雙子": "♊", "巨蟹": "♋", "獅子": "♌", "處女": "♍", "天秤": "♎", "天蠍": "♏", "射手": "♐", "摩羯": "♑", "水瓶": "♒", "雙魚": "♓" };
 
