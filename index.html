@@ -231,6 +231,22 @@
 
             <!-- Explanation Wrapper -->
             <div id="explain-view-container" class="hidden flex-1 overflow-y-auto pb-20 px-1 explain-content">
+                <div id="thun-core" class="explain-box border-emerald-200 bg-emerald-50/60">
+                    <h3 style="margin-top:0;">📖 圖恩方法核心邏輯</h3>
+                    <p style="margin-bottom:0.5rem;">瑪莉亞·圖恩的規則其實是<strong>兩層，各管各的事</strong>：</p>
+                    <ul class="list-none text-sm space-y-3 text-slate-700">
+                        <li class="bg-white/70 rounded-lg p-3 border border-emerald-100">
+                            <strong class="text-emerald-700">① 器官日（根葉花果）管「作物種類」</strong><br>
+                            播種、照料、採收，選你目標器官對應的日子。<strong>儲存用的採收尤其要對日</strong>——根菜挑根日收、水果種子挑果日收，存放品質差很多；葉日則不做任何儲存性採收。
+                        </li>
+                        <li class="bg-white/70 rounded-lg p-3 border border-emerald-100">
+                            <strong class="text-emerald-700">② 上升／下降月管「動作方向」</strong><br>
+                            <span class="color-desc font-bold">⤵️ 下降月</span>（能量向根）：移栽定植、施堆肥、修剪。<br>
+                            <span class="color-asc font-bold">⤴️ 上升月</span>（樹液向上）：嫁接、採接穗、採收鮮食蔬果。
+                        </li>
+                    </ul>
+                    <p class="text-sm mt-3 mb-0 text-slate-600">兩層<strong>疊起來用</strong>才是圖恩方法的完整型：例如「果日＋下降月」＝定植番茄的理想日；「根日＋上升月」＝採收儲存蘿蔔的理想日。休息日（交點、近遠地點、日月食前後）則兩層都暫停：不播種、不定植、不嫁接、不做儲存性採收。</p>
+                </div>
                 <div class="explain-box">
                     <h3 style="margin-top:0;">什麼是天文曆？</h3>
                     <p>這份曆法基於生機互動農法 (Bio-Dynamic) 的原理，認為植物的生長不僅受陽光、水分影響，更深深受到宇宙天體（特別是月亮與黃道星座）運行節律的牽引。這份曆法旨在幫助我們配合這些自然的呼吸節奏進行農事與生活。</p>
@@ -238,17 +254,17 @@
                 <div class="explain-box bg-orange-50/50 border-orange-100">
                     <h3>四大元素與農耕 (Plant Types)</h3>
                     <ul class="list-disc pl-5 text-sm space-y-2 text-slate-600">
-                        <li><span class="emoji-icon">🥕</span> <strong class="color-root">根日 (土)</strong>：適合翻土、堆肥、採收根莖類。</li>
-                        <li><span class="emoji-icon">🌿</span> <strong class="color-leaf">葉日 (水)</strong>：適合澆水、種植葉菜、割草。</li>
-                        <li><span class="emoji-icon">🌼</span> <strong class="color-flower">花日 (光/氣)</strong>：適合照料花卉、採收需乾燥的藥草。</li>
-                        <li><span class="emoji-icon">🍎</span> <strong class="color-fruit">果日 (火)</strong>：適合採收水果、種子，進行釀造或品飲。</li>
+                        <li><span class="emoji-icon">🥕</span> <strong class="color-root">根日 (土)</strong>：播種、定植、採收根莖類；此日採收的根菜最耐儲存。</li>
+                        <li><span class="emoji-icon">🌿</span> <strong class="color-leaf">葉日 (水)</strong>：播種、定植葉菜類；割草促進再生。不做儲存性採收。</li>
+                        <li><span class="emoji-icon">🌼</span> <strong class="color-flower">花日 (光/氣)</strong>：播種花卉與花菜類（青花菜、花椰菜）；採收花草藥草，利乾燥保香。</li>
+                        <li><span class="emoji-icon">🍎</span> <strong class="color-fruit">果日 (火)</strong>：播種、定植果菜類；採收水果與種子最耐存、留種發芽率佳。</li>
                     </ul>
                 </div>
                 <div class="explain-box bg-blue-50/50 border-blue-100">
                     <h3>月亮軌跡 (Moon Path)</h3>
                     <ul class="list-disc pl-5 text-sm space-y-2 text-slate-600">
-                        <li><strong class="color-asc">⤴️ 上升月 (Ascending)</strong>：能量如「呼氣」般向外、向上擴展。適合接枝、採集接穗。</li>
-                        <li><strong class="color-desc">⤵️ 下降月 (Descending)</strong>：能量如「吸氣」般向內、向下收斂。適合移栽、種植、施肥。</li>
+                        <li><strong class="color-asc">⤴️ 上升月 (Ascending)</strong>：能量如「呼氣」般向外、向上擴展。適合嫁接、採接穗、採收鮮食蔬果。</li>
+                        <li><strong class="color-desc">⤵️ 下降月 (Descending)</strong>：能量如「吸氣」般向內、向下收斂。適合移栽定植、施堆肥、修剪。</li>
                     </ul>
                     <p class="text-xs mt-2 text-slate-400">*註：南半球的上升/下降定義與北半球相反，本程式會依據設定自動調整。</p>
                 </div>
@@ -340,6 +356,7 @@
                     <span id="modal-badge" class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-white shadow-md text-slate-500 mb-2 z-10 border border-slate-50">Type</span>
                     <h3 id="modal-title" class="text-2xl font-bold text-slate-800 mb-1 serif text-center">Title</h3>
                     <p id="modal-subtitle" class="text-sm text-slate-400 font-medium tracking-wide text-center">Subtitle</p>
+                    <p id="modal-path-hint" class="text-xs text-slate-500 font-medium mt-2 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100"></p>
                 </div>
 
                 <div class="space-y-3">
@@ -362,6 +379,11 @@
                         </div>
                     </div>
                 </div>
+
+                <button onclick="goToThunCore()" class="w-full mt-4 flex items-center justify-center gap-2 text-sm font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 rounded-xl py-3 transition">
+                    <span>📖</span><span>圖恩方法核心邏輯</span>
+                    <svg class="svg-icon" viewBox="0 0 320 512" style="font-size:0.7rem;"><path d="M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z"/></svg>
+                </button>
             </div>
         </div>
     </div>
@@ -369,15 +391,19 @@
     <script>
         // Data (Emojis)
         const PLANT_TYPES = {
-            'Root': { name: '根日', icon: '🥕', color: 'color-root', bg: 'bg-root', do: '翻土、堆肥、收根莖。', avoid: '避免接觸花朵。' },
-            'Leaf': { name: '葉日', icon: '🌿', color: 'color-leaf', bg: 'bg-leaf', do: '澆水、種葉菜、割草。', avoid: '避免採收果實。' },
-            'Flower': { name: '花日', icon: '🌼', color: 'color-flower', bg: 'bg-flower', do: '採收花卉、通風。', avoid: '避免過度施肥。' },
-            'Fruit': { name: '果日', icon: '🍎', color: 'color-fruit', bg: 'bg-fruit', do: '採收水果、修剪。', avoid: '避免移栽。' },
-            'Ban':   { name: '休息日', icon: '🚫', color: 'color-ban', bg: 'bg-ban', do: '整理農具、休息。', avoid: '禁止任何農事。' }
+            'Root': { name: '根日', icon: '🥕', color: 'color-root', bg: 'bg-root', do: '播種、定植、採收根莖類（蘿蔔、薑、馬鈴薯）；此日採收的根菜最耐儲存。', avoid: '果菜、葉菜、花卉的播種擇日，各選對應日。' },
+            'Leaf': { name: '葉日', icon: '🌿', color: 'color-leaf', bg: 'bg-leaf', do: '播種、定植葉菜類；割草促進再生。', avoid: '採收任何作物儲存（易腐爛），釀漬醃菜也不宜。' },
+            'Flower': { name: '花日', icon: '🌼', color: 'color-flower', bg: 'bg-flower', do: '播種花卉與花菜類（青花菜、花椰菜）；採收花草藥草，利乾燥保香。', avoid: '根果葉作物的播種擇日，各選對應日。' },
+            'Fruit': { name: '果日', icon: '🍎', color: 'color-fruit', bg: 'bg-fruit', do: '播種、定植果菜類（番茄、豆類、瓜果）；採收水果與種子最耐存、留種發芽率佳。', avoid: '儲存性採收勿選葉日；移栽另看下降月。' },
+            'Ban':   { name: '休息日', icon: '🚫', color: 'color-ban', bg: 'bg-ban', do: '整理農具環境、規劃農事。', avoid: '播種、定植、嫁接、儲存性採收。' }
         };
         const MOON_PATH = {
-            'Ascending': { name: '上升', icon: '⤴️', color: 'color-asc', bg: 'bg-asc', do: '接枝、採集。', avoid: '移栽。' },
-            'Descending': { name: '下降', icon: '⤵️', color: 'color-desc', bg: 'bg-desc', do: '移栽、施肥。', avoid: '接枝。' }
+            'Ascending': { name: '上升', icon: '⤴️', color: 'color-asc', bg: 'bg-asc', do: '嫁接、採接穗；採收鮮食蔬果。', avoid: '移栽定植、修剪（樹液上行，傷口流失大）。' },
+            'Descending': { name: '下降', icon: '⤵️', color: 'color-desc', bg: 'bg-desc', do: '移栽定植、施堆肥、修剪；根系易著土。', avoid: '嫁接、採接穗。' }
+        };
+        const PATH_HINT = {
+            'Ascending': '⤴️ 上升月：適合嫁接、採接穗、採收鮮食蔬果',
+            'Descending': '⤵️ 下降月：適合移栽定植、施堆肥、修剪'
         };
         const ZODIAC_SYMBOLS = { "白羊": "♈", "金牛": "♉", "雙子": "♊", "巨蟹": "♋", "獅子": "♌", "處女": "♍", "天秤": "♎", "天蠍": "♏", "射手": "♐", "摩羯": "♑", "水瓶": "♒", "雙魚": "♓" };
 
@@ -833,6 +859,7 @@
             document.getElementById('modal-subtitle').innerText = currentTab==='plant'
                 ? `月亮位於 ${data.zodiac}${data.eventLabel ? '｜' + data.eventLabel : ''}`
                 : `軌道 ${data.pathType}${data.eventLabel ? '｜' + data.eventLabel : ''}`;
+            updatePathHint(data);
 
             document.getElementById('modal-do').innerText = info.do;
             document.getElementById('modal-avoid').innerText = info.avoid;
@@ -884,6 +911,7 @@
                 document.getElementById('modal-subtitle').innerText = currentTab==='plant'
                     ? `月亮位於 ${primaryData.zodiac}${primaryData.eventLabel ? '｜' + primaryData.eventLabel : ''}`
                     : `軌道 ${primaryData.pathType}${primaryData.eventLabel ? '｜' + primaryData.eventLabel : ''}`;
+                updatePathHint(primaryData);
                 document.getElementById('modal-do').innerText = info.do;
                 document.getElementById('modal-avoid').innerText = info.avoid;
                 document.getElementById('modal-badge').innerText = currentTab==='plant'?'農耕':'月相';
@@ -891,6 +919,24 @@
             }
             
             document.getElementById('detail-modal').setAttribute('aria-hidden', 'false');
+        }
+
+        function updatePathHint(data) {
+            const el = document.getElementById('modal-path-hint');
+            // 休息日不顯示升降月建議，避免與「避免事項」矛盾
+            if (currentTab === 'plant' && !data.isBan) {
+                el.innerText = PATH_HINT[data.pathType];
+                el.style.display = '';
+            } else {
+                el.style.display = 'none';
+            }
+        }
+
+        function goToThunCore() {
+            closeModal();
+            switchTab('explain');
+            const target = document.getElementById('thun-core');
+            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         function closeModal() { document.getElementById('detail-modal').setAttribute('aria-hidden', 'true'); }
