@@ -8,6 +8,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <!-- 僅保留 FontAwesome CSS 用於少數 UI 圖示 (如箭頭)，核心業務圖示全改用 Emoji -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- 真實星曆引擎 (MIT License, https://github.com/cosinekitty/astronomy) -->
+    <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
     
     <style>
         body { font-family: 'Noto Sans TC', sans-serif; background-color: #f0fdf4; user-select: none; -webkit-tap-highlight-color: transparent; overflow: hidden; }
@@ -259,9 +261,9 @@
                 <div class="mt-8 border-t border-slate-200 pt-4">
                     <h4 class="text-sm font-bold text-slate-600 mb-2">關於本程式</h4>
                     <p class="legal-text">
-                        <strong>版本：</strong> 5.4.0 (Re-Layout)<br>
+                        <strong>版本：</strong> 6.0.0 (True Ephemeris)<br>
                         <strong>開發者：</strong> 農夫彼得 / 心是一畝田自然農場<br>
-                        <strong>資料來源：</strong> 本曆法以 Maria Thun 生機互動農法的真實星座邊界為基礎，並加入紙本曆法可辨識事件的時間校準與休息遮罩。
+                        <strong>資料來源：</strong> 本曆法依 Maria Thun 生機互動農法，以 astronomy-engine 真實星曆計算月亮實際所在的 IAU 天文星座（蛇夫座併入天蠍座）、上升下降（真實赤緯）、交點/近遠地點/日月食（休息日）。已與紙本東亞BD天文曆逐點校驗。
                     </p>
                     <h4 class="text-sm font-bold text-slate-600 mt-4 mb-2">免責聲明 (Disclaimer)</h4>
                     <p class="legal-text">
@@ -378,47 +380,62 @@
             'Descending': { name: '下降', icon: '⤵️', color: 'color-desc', bg: 'bg-desc', do: '移栽、施肥。', avoid: '接枝。' }
         };
         const ZODIAC_SYMBOLS = { "白羊": "♈", "金牛": "♉", "雙子": "♊", "巨蟹": "♋", "獅子": "♌", "處女": "♍", "天秤": "♎", "天蠍": "♏", "射手": "♐", "摩羯": "♑", "水瓶": "♒", "雙魚": "♓" };
-        const BD_CONSTELLATIONS = [
-            { name: "白羊", symbol: "♈", start: 18.5, end: 46.2, type: "Fruit", path: "Ascending" },
-            { name: "金牛", symbol: "♉", start: 46.2, end: 84.7, type: "Root", path: "Ascending" },
-            { name: "雙子", symbol: "♊", start: 84.7, end: 112.5, type: "Flower", path: "Descending" },
-            { name: "巨蟹", symbol: "♋", start: 112.5, end: 133.5, type: "Leaf", path: "Descending" },
-            { name: "獅子", symbol: "♌", start: 133.5, end: 169.5, type: "Fruit", path: "Descending" },
-            { name: "處女", symbol: "♍", start: 169.5, end: 213.5, type: "Root", path: "Descending" },
-            { name: "天秤", symbol: "♎", start: 213.5, end: 235.0, type: "Flower", path: "Descending" },
-            { name: "天蠍", symbol: "♏", start: 235.0, end: 256.0, type: "Leaf", path: "Descending" },
-            { name: "射手", symbol: "♐", start: 256.0, end: 295.5, type: "Fruit", path: "Ascending" },
-            { name: "摩羯", symbol: "♑", start: 295.5, end: 323.0, type: "Root", path: "Ascending" },
-            { name: "水瓶", symbol: "♒", start: 323.0, end: 351.0, type: "Flower", path: "Ascending" },
-            { name: "雙魚", symbol: "♓", start: 351.0, end: 378.5, type: "Leaf", path: "Ascending" }
-        ];
 
-        const PAPER_SIGN_TRANSITIONS = [
-            { at: "2026-02-05T08:27:00+08:00", sign: "處女" },
-            { at: "2026-02-08T05:28:00+08:00", sign: "天秤" },
-            { at: "2026-02-09T17:58:00+08:00", sign: "天蠍" }
-        ].map(item => ({ ...item, ms: new Date(item.at).getTime() }));
+        // BD 元素分類：火=果(白羊/獅子/射手) 土=根(金牛/處女/摩羯) 風=花(雙子/天秤/水瓶) 水=葉(巨蟹/天蠍/雙魚)
+        const SIGN_INFO = {
+            "白羊": { type: "Fruit" },  "金牛": { type: "Root" },  "雙子": { type: "Flower" }, "巨蟹": { type: "Leaf" },
+            "獅子": { type: "Fruit" },  "處女": { type: "Root" },  "天秤": { type: "Flower" }, "天蠍": { type: "Leaf" },
+            "射手": { type: "Fruit" },  "摩羯": { type: "Root" },  "水瓶": { type: "Flower" }, "雙魚": { type: "Leaf" }
+        };
 
-        const PAPER_ASTRO_EVENTS = [
-            { at: "2026-01-07T19:22:00+08:00", type: "node", label: "交點", beforeHours: 12, afterHours: 12 },
-            { at: "2026-02-13T04:47:00+08:00", type: "apogee", label: "遠地點", beforeHours: 12, afterHours: 12 },
-            { at: "2026-03-03T12:35:00+08:00", type: "node", label: "交點", beforeHours: 12, afterHours: 12 },
-            { at: "2026-03-03T19:35:00+08:00", type: "lunarEclipse", label: "月全食", beforeHours: 12, afterHours: 12 }
-        ].map(normalizeAstroEvent);
+        // IAU 星座 -> 中文星座（蛇夫座依 BD 慣例併入天蠍）
+        const IAU_TO_SIGN = {
+            "Aries": "白羊", "Taurus": "金牛", "Gemini": "雙子", "Cancer": "巨蟹",
+            "Leo": "獅子", "Virgo": "處女", "Libra": "天秤", "Scorpius": "天蠍",
+            "Ophiuchus": "天蠍", "Sagittarius": "射手", "Capricornus": "摩羯",
+            "Aquarius": "水瓶", "Pisces": "雙魚"
+        };
 
-        const KNOWN_2026_ECLIPSES = [
-            { at: "2026-02-17T20:13:00+08:00", type: "solarEclipse", label: "日食", beforeHours: 24, afterHours: 24 },
-            { at: "2026-03-03T19:35:00+08:00", type: "lunarEclipse", label: "月全食", beforeHours: 24, afterHours: 24 },
-            { at: "2026-08-13T01:47:00+08:00", type: "solarEclipse", label: "日食", beforeHours: 24, afterHours: 24 },
-            { at: "2026-08-28T12:13:00+08:00", type: "lunarEclipse", label: "月偏食", beforeHours: 24, afterHours: 24 }
-        ].map(normalizeAstroEvent);
-
-        const AUTO_EVENT_SEEDS = [
-            { at: "2026-03-03T12:35:00+08:00", family: "node", type: "node", label: "交點", periodDays: 13.606110, beforeHours: 12, afterHours: 12 },
-            { at: "2026-02-13T04:47:00+08:00", family: "apsis", type: "apogee", label: "遠地點", periodDays: 13.777275, beforeHours: 12, afterHours: 12 }
+        // IAU 星座邊界在黃道上的投影（黃經，2026.5 曆元）。
+        // 後備用：月亮偶爾掠過鯨魚座/獵戶座等非黃道星座角落時，退回純黃經判定。
+        const ECLIPTIC_BOUNDS = [
+            { start: 29.05,  name: "白羊" }, { start: 53.78,  name: "金牛" },
+            { start: 90.51,  name: "雙子" }, { start: 118.35, name: "巨蟹" },
+            { start: 138.40, name: "獅子" }, { start: 174.22, name: "處女" },
+            { start: 218.18, name: "天秤" }, { start: 241.41, name: "天蠍" },
+            { start: 266.60, name: "射手" }, { start: 300.02, name: "摩羯" },
+            { start: 327.85, name: "水瓶" }, { start: 352.02, name: "雙魚" }
         ];
 
         const autoEventCache = {};
+
+        function astroTime(timestamp) { return Astronomy.MakeTime(new Date(timestamp)); }
+
+        function moonEquatorial(timestamp) {
+            const vec = Astronomy.GeoMoon(astroTime(timestamp));
+            return Astronomy.EquatorFromVector(vec);
+        }
+
+        function signFromEclipticLon(lon) {
+            let current = "雙魚"; // lon < 29.05 仍屬雙魚
+            for (const b of ECLIPTIC_BOUNDS) { if (lon >= b.start) current = b.name; }
+            return current;
+        }
+
+        // 月亮實際所在星座（含黃緯，與紙本天文曆判定方式一致）
+        function getSignForTimestamp(timestamp) {
+            const eq = moonEquatorial(timestamp);
+            const iau = Astronomy.Constellation(eq.ra, eq.dec).name;
+            if (IAU_TO_SIGN[iau]) return IAU_TO_SIGN[iau];
+            return signFromEclipticLon(Astronomy.EclipticGeoMoon(astroTime(timestamp)).lon);
+        }
+
+        // 上升/下降月：以月亮赤緯實際增減判定（北半球定義；南半球在 getMoonData 反轉）
+        function getMoonPathRaw(timestamp) {
+            const before = moonEquatorial(timestamp - 30 * 60000).dec;
+            const after = moonEquatorial(timestamp + 30 * 60000).dec;
+            return after >= before ? 'Ascending' : 'Descending';
+        }
 
         // Timezones
         const TIMEZONES = [
@@ -448,104 +465,55 @@
             return `<span class="emoji-icon ${additionalClasses}">${typeInfo.icon}</span>`;
         }
 
-        function getSiderealDegree(timestamp) {
-            const d = (timestamp / 86400000) - 10957.5;
-            let tropicalLong = (218.316 + 13.176396 * d) % 360;
-            if (tropicalLong < 0) tropicalLong += 360;
-            let siderealLong = tropicalLong + 0.1; 
-            if (siderealLong < 0) siderealLong += 360;
-            if (siderealLong >= 360) siderealLong -= 360;
-            return siderealLong;
-        }
-
-        function normalizeAstroEvent(item) {
-            const ms = new Date(item.at).getTime();
+        function makeAstroEvent(ms, type, label, beforeHours, afterHours) {
             return {
-                ...item,
-                ms,
-                startMs: ms - item.beforeHours * 60 * 60 * 1000,
-                endMs: ms + item.afterHours * 60 * 60 * 1000
+                ms, type, label, beforeHours, afterHours,
+                startMs: ms - beforeHours * 60 * 60 * 1000,
+                endMs: ms + afterHours * 60 * 60 * 1000
             };
         }
 
-        function getBDConstellation(degree) {
-            const normalizedDegree = degree < 18.5 ? degree + 360 : degree;
-            return BD_CONSTELLATIONS.find(c => normalizedDegree >= c.start && normalizedDegree < c.end) || BD_CONSTELLATIONS[0];
-        }
-
-        function getConstellationByName(name) {
-            return BD_CONSTELLATIONS.find(c => c.name === name);
-        }
-
-        function getPaperCalibratedConstellation(timestamp) {
-            const first = PAPER_SIGN_TRANSITIONS[0].ms;
-            const last = PAPER_SIGN_TRANSITIONS[PAPER_SIGN_TRANSITIONS.length - 1].ms;
-            if (timestamp < first || timestamp >= last + 36 * 60 * 60 * 1000) return null;
-
-            let current = null;
-            for (const transition of PAPER_SIGN_TRANSITIONS) {
-                if (timestamp >= transition.ms) current = transition.sign;
-            }
-            return current ? getConstellationByName(current) : null;
-        }
-
-        function getConstellationForTimestamp(timestamp) {
-            return getPaperCalibratedConstellation(timestamp) || getBDConstellation(getSiderealDegree(timestamp));
-        }
-
+        // 全年天文事件：交點/近遠地點/日月食，全部由真實星曆搜尋（非固定週期外推）
         function generateAutoAstroEvents(year) {
             if (autoEventCache[year]) return autoEventCache[year];
 
             const yearStart = Date.UTC(year, 0, 1) - 3 * 24 * 60 * 60 * 1000;
             const yearEnd = Date.UTC(year + 1, 0, 1) + 3 * 24 * 60 * 60 * 1000;
-            const events = [...KNOWN_2026_ECLIPSES];
+            const startTime = astroTime(yearStart);
+            const events = [];
 
-            AUTO_EVENT_SEEDS.forEach(seed => {
-                const seedMs = new Date(seed.at).getTime();
-                const periodMs = seed.periodDays * 24 * 60 * 60 * 1000;
-                const firstIndex = Math.floor((yearStart - seedMs) / periodMs) - 1;
-                const lastIndex = Math.ceil((yearEnd - seedMs) / periodMs) + 1;
+            let node = Astronomy.SearchMoonNode(startTime);
+            while (node.time.date.getTime() < yearEnd) {
+                events.push(makeAstroEvent(node.time.date.getTime(), 'node', '交點', 12, 12));
+                node = Astronomy.NextMoonNode(node);
+            }
 
-                for (let i = firstIndex; i <= lastIndex; i++) {
-                    const ms = Math.round(seedMs + i * periodMs);
-                    if (ms < yearStart || ms > yearEnd) continue;
+            let apsis = Astronomy.SearchLunarApsis(startTime);
+            while (apsis.time.date.getTime() < yearEnd) {
+                const isApogee = apsis.kind === 1;
+                events.push(makeAstroEvent(apsis.time.date.getTime(),
+                    isApogee ? 'apogee' : 'perigee', isApogee ? '遠地點' : '近地點', 12, 12));
+                apsis = Astronomy.NextLunarApsis(apsis);
+            }
 
-                    let type = seed.type;
-                    let label = seed.label;
-                    if (seed.family === 'apsis' && Math.abs(i % 2) === 1) {
-                        type = 'perigee';
-                        label = '近地點';
-                    }
-
-                    events.push(normalizeAstroEvent({
-                        at: new Date(ms).toISOString(),
-                        type,
-                        label,
-                        beforeHours: seed.beforeHours,
-                        afterHours: seed.afterHours
-                    }));
+            let lunar = Astronomy.SearchLunarEclipse(startTime);
+            while (lunar.peak.date.getTime() < yearEnd) {
+                if (lunar.kind !== 'penumbral') {
+                    events.push(makeAstroEvent(lunar.peak.date.getTime(), 'lunarEclipse',
+                        lunar.kind === 'total' ? '月全食' : '月偏食', 24, 24));
                 }
-            });
+                lunar = Astronomy.NextLunarEclipse(lunar.peak);
+            }
 
-            const merged = [...events, ...PAPER_ASTRO_EVENTS].sort((a, b) => a.ms - b.ms);
-            const deduped = [];
-            merged.forEach(event => {
-                const existingIndex = deduped.findIndex(existing =>
-                    existing.type === event.type && Math.abs(existing.ms - event.ms) < 18 * 60 * 60 * 1000
-                );
-                if (existingIndex >= 0) {
-                    const existing = deduped[existingIndex];
-                    const preferPaper = PAPER_ASTRO_EVENTS.includes(event);
-                    deduped[existingIndex] = preferPaper
-                        ? event
-                        : { ...existing, startMs: Math.min(existing.startMs, event.startMs), endMs: Math.max(existing.endMs, event.endMs) };
-                } else {
-                    deduped.push(event);
-                }
-            });
+            let solar = Astronomy.SearchGlobalSolarEclipse(startTime);
+            while (solar.peak.date.getTime() < yearEnd) {
+                events.push(makeAstroEvent(solar.peak.date.getTime(), 'solarEclipse', '日食', 24, 24));
+                solar = Astronomy.NextGlobalSolarEclipse(solar.peak);
+            }
 
-            autoEventCache[year] = deduped;
-            return deduped;
+            const sorted = events.sort((a, b) => a.ms - b.ms);
+            autoEventCache[year] = sorted;
+            return sorted;
         }
 
         function getAstroEventsForRange(startMs, endMs) {
@@ -567,26 +535,30 @@
             return matches.find(event => event.type.includes('Eclipse')) || matches[0];
         }
 
+        // 一日內的顯示狀態（星座 + 升降）變化時刻，2小時取樣 + 二分逼近到分鐘
+        function moonStateKey(timestamp) {
+            return getSignForTimestamp(timestamp) + '|' + getMoonPathRaw(timestamp);
+        }
+
         function findSignBoundaries(startMs, endMs) {
             const boundaries = [];
             const stepMs = 2 * 60 * 60 * 1000;
             let left = startMs;
-            let leftSign = getConstellationForTimestamp(left + 60 * 1000).name;
+            let leftState = moonStateKey(left + 60 * 1000);
 
             for (let right = Math.min(startMs + stepMs, endMs); right <= endMs; right += stepMs) {
                 const cappedRight = Math.min(right, endMs);
-                const rightSign = getConstellationForTimestamp(cappedRight - 60 * 1000).name;
-                if (rightSign !== leftSign) {
+                const rightState = moonStateKey(cappedRight - 60 * 1000);
+                if (rightState !== leftState) {
                     let lo = left;
                     let hi = cappedRight;
                     for (let i = 0; i < 24; i++) {
                         const mid = Math.floor((lo + hi) / 2);
-                        const midSign = getConstellationForTimestamp(mid).name;
-                        if (midSign === leftSign) lo = mid;
+                        if (moonStateKey(mid) === leftState) lo = mid;
                         else hi = mid;
                     }
                     boundaries.push(Math.round(hi / 60000) * 60000);
-                    leftSign = rightSign;
+                    leftState = rightState;
                 }
                 left = cappedRight;
                 if (cappedRight >= endMs) break;
@@ -610,33 +582,30 @@
         }
 
         function getMoonData(timestamp) {
-            const degree = getSiderealDegree(timestamp);
-            const z = getConstellationForTimestamp(timestamp);
+            const signName = getSignForTimestamp(timestamp);
             const unfavorableEvent = getUnfavorableEvent(timestamp);
             const isBan = Boolean(unfavorableEvent);
-            
-            let effectivePath = z.path;
+
+            let effectivePath = getMoonPathRaw(timestamp);
             if (currentHemisphere === 'S') {
-                effectivePath = (z.path === 'Ascending') ? 'Descending' : 'Ascending';
+                effectivePath = (effectivePath === 'Ascending') ? 'Descending' : 'Ascending';
             }
-            
-            return { 
-                zodiac: z.name + '座', 
-                symbol: z.symbol || ZODIAC_SYMBOLS[z.name], 
-                plantType: isBan ? 'Ban' : z.type, 
-                pathType: effectivePath, 
-                isBan: isBan, 
-                degree: degree,
+
+            return {
+                zodiac: signName + '座',
+                symbol: ZODIAC_SYMBOLS[signName],
+                plantType: isBan ? 'Ban' : SIGN_INFO[signName].type,
+                pathType: effectivePath,
+                isBan: isBan,
+                degree: Astronomy.EclipticGeoMoon(astroTime(timestamp)).lon,
                 eventLabel: unfavorableEvent ? unfavorableEvent.label : ''
             };
         }
 
         function getMoonPhaseState(timestamp) {
-            const knownNewMoon = new Date('2024-01-11T19:57:00Z').getTime(); 
-            const cycle = 29.53058867 * 86400000;
-            const diff = timestamp - knownNewMoon;
-            const phaseRatio = (diff % cycle) / cycle; 
-            const age = phaseRatio * 29.53;
+            // 真實月相角：0=朔 90=上弦 180=望 270=下弦
+            const phaseAngle = Astronomy.MoonPhase(astroTime(timestamp));
+            const age = phaseAngle / 360 * 29.53;
             let emoji='🌑', text='新月';
             if(age>1.5) { emoji='🌒'; text='眉月'; }
             if(age>6) { emoji='🌓'; text='上弦'; }
@@ -685,9 +654,6 @@
             const endMs = startMs + 24 * 60 * 60 * 1000;
             const boundaries = new Set([startMs, endMs]);
 
-            PAPER_SIGN_TRANSITIONS.forEach(transition => {
-                if (transition.ms > startMs && transition.ms < endMs) boundaries.add(transition.ms);
-            });
             findSignBoundaries(startMs, endMs).forEach(boundary => {
                 if (boundary > startMs && boundary < endMs) boundaries.add(boundary);
             });
