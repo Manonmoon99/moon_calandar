@@ -572,7 +572,11 @@
 
         function sameDisplayState(a, b) {
             if (!a || !b) return false;
-            if (currentTab === 'plant') return a.data.plantType === b.data.plantType && a.data.zodiac === b.data.zodiac;
+            if (currentTab === 'plant') {
+                // 休息日期間換座不影響顯示，避免出現兩筆相同的休息日
+                if (a.data.plantType === 'Ban' && b.data.plantType === 'Ban') return true;
+                return a.data.plantType === b.data.plantType && a.data.zodiac === b.data.zodiac;
+            }
             return a.data.pathType === b.data.pathType;
         }
 
